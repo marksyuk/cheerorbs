@@ -1,6 +1,7 @@
 # CheerOrb
 
-Jan '22, Under Development: Support for M5STICK-C Plus
+
+_Jan '22, Under Development:_ Support for M5STICK-C Plus
 -----
 
 Here is the Arduino code and the 3D printer STL files to make your own CheerOrb.
