@@ -15,14 +15,26 @@ By Andy Stanford-Clark (@andysc)
 *** update the VERSION string!!! ***
 
 1.0 CheerOrb v1.0  strip out all the provisioning stuff. Still use Wifi manager
- 
- 
 
- use board "WeMos D1 R2 & mini"
+Revisions
+2022-01-17 David Marks. Incorporated support for M5STICK-C plus requires testing with NeoPixel and 8266
+ 
+Devices supported:
+
+  ESP8266: "WeMos D1 R2 & mini"  
+  
+  ESP32:   "M5STICK-C Plus"      
 
 
 */
 
+// select target device - comment out whichever does not apply 
+// #define __ESP8266
+#define __M5StickCPlus
+
+#ifdef __M5StickCPlus
+  #include <M5StickCPlus.h>        
+#endif
 
 #define VERSION "1.0"
 
@@ -35,19 +47,24 @@ By Andy Stanford-Clark (@andysc)
 #define AP_NAME "CheerOrb"
 
 
-#include <Adafruit_NeoPixel.h>
+#include <Adafruit_NeoPixel.h>          
 
 // it seems GRB is the default
 #define ORDER NEO_GRB
 // change it to RGB if it's one that flashes white at power up
 //#define ORDER NEO_RGB
 
+#ifdef __ESP8266
+  #include <ESP8266WiFi.h>
+#endif
+               
+#ifdef __M5StickCPlus
+  #include <WiFi.h>
+#endif
 
-#include <ESP8266WiFi.h>
+#include <WiFiManager.h>          // https://github.com/tzapu/WiFiManager WiFi Configuration Magic
 
-#include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager WiFi Configuration Magic
-
-#include <PubSubClient.h>
+#include <PubSubClient.h>         // https://github.com/plapointe6/EspMQTTClient and dependencies
 
 #include <Ticker.h>
 
@@ -66,9 +83,15 @@ WiFiManager wifiManager;
 
 PubSubClient client(espClient);
 
-//Change this if using different number of neopixels or different pin
-Adafruit_NeoPixel pixel = Adafruit_NeoPixel(1, D2, ORDER); // one pixel, on pin D2
+#ifdef __ESP8266
+  //Change this if using different number of neopixels or different pin
+  Adafruit_NeoPixel pixel = Adafruit_NeoPixel(1, D2, ORDER); // one pixel, on pin D2
+#endif
 
+#ifdef __M5StickCPlus
+  //Requires testing for M5STICK-C  
+  Adafruit_NeoPixel pixel = Adafruit_NeoPixel(1, 21, ORDER); // one pixel, on pin 21
+#endif
 Ticker ticker;
 
 
@@ -98,11 +121,25 @@ char mac_string[20]; // mac address
 
 void setup() {
   
-  Serial.begin(9600);
- 
+  #ifdef __ESP8266
+    Serial.begin(9600);
+  #endif
+  
+  #ifdef __M5StickCPlus
+    Serial.begin(115200);
+  #endif
+
   pixel.begin();
   delay(10);
   pixel.show(); // Initialize all pixels to 'off'
+
+
+  #ifdef __M5StickCPlus
+      // initialize the M5StickC object
+      M5.begin();
+      M5.Lcd.fillScreen(TFT_WHITE);
+      Serial.println("M5STICK-C Plus");
+  #endif
 
   delay(500);
 
@@ -163,7 +200,13 @@ void setup() {
         Serial.println("failed to connect to an access point");
         delay(2000);
         // not much else to do, really, other than try again
-        ESP.reset();
+
+        #ifdef __ESP8266
+          ESP.reset();
+        #endif
+        #ifdef __ESP32  
+          ESP.restart();  // advice given by compiler error refers
+        #endif        
       }
     
       Serial.println("connected to wifi!");
@@ -319,6 +362,8 @@ void set_colour(uint32_t colour) {
   set_pixels(colour);
   // Updates current_LED with what the user last requested,
   // so we can toggle it to black and back again.
+
+  // DJM TODO convert colour to RGB656, update screen on M5STICK-C -> M5.Lcd.fillScreen() refers
   
   current_colour = colour;
 }
