@@ -18,22 +18,31 @@ By Andy Stanford-Clark (@andysc)
 
 Revisions
 2022-01-17 David Marks. Incorporated support for M5STICK-C plus requires testing with NeoPixel and 8266
- 
+2022-03-22 David Marks. Incorporated support for M5 STAMP-C3 Mate - still requires testing with 8266
+
+Known Issues
+2022-03-22 David Marks. The STAMP-C3 version doesn't save the wifi credentials, so when you re-boot the board it you need to login to the webserver and choose your ap and password
+
 Devices supported:
 
   ESP8266: "WeMos D1 R2 & mini"  
   
-  ESP32:   "M5STICK-C Plus"      
+  ESP32:   "M5STICK-C Plus" "M5 STAMP-C3 Mate"      
 
 
 */
 
 // select target device - comment out whichever does not apply 
 // #define __ESP8266
-#define __M5StickCPlus
+// #define __M5StickCPlus
+#define __M5STAMPC3
 
 #ifdef __M5StickCPlus
   #include <M5StickCPlus.h>        
+#endif
+
+#ifdef __M5STAMPC3
+  //#include <M5StickCPlus.h>        
 #endif
 
 #define VERSION "1.0"
@@ -59,6 +68,10 @@ Devices supported:
 #endif
                
 #ifdef __M5StickCPlus
+  #include <WiFi.h>
+#endif
+
+#ifdef __M5STAMPC3
   #include <WiFi.h>
 #endif
 
@@ -92,6 +105,13 @@ PubSubClient client(espClient);
   //Requires testing for M5STICK-C  
   Adafruit_NeoPixel pixel = Adafruit_NeoPixel(1, 21, ORDER); // one pixel, on pin 21
 #endif
+
+#ifdef __M5STAMPC3
+  int LED_BUILTIN = 2;  // I think that this references pin GPIO8
+  //Change this if using different number of neopixels or different pin
+  Adafruit_NeoPixel pixel = Adafruit_NeoPixel(1, LED_BUILTIN, ORDER); // one pixel, on pin referenced by LED_BUILTIN 
+#endif
+
 Ticker ticker;
 
 
@@ -126,6 +146,11 @@ void setup() {
   #endif
   
   #ifdef __M5StickCPlus
+    Serial.begin(115200);
+  #endif
+
+  #ifdef __M5STAMPC3
+    pinMode (LED_BUILTIN, OUTPUT);
     Serial.begin(115200);
   #endif
 
